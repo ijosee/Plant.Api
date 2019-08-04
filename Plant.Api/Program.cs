@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Plant.Api {
     public class Program {
 
-        static string[] urls = new string[1] { "http://*:5000" }; //, "https://*:5001"
+        static string[] urls = new string[1] { "http://*:5000" };
 
         public static void Main (string[] args) {
             CreateWebHostBuilder (args).Build ().Run ();

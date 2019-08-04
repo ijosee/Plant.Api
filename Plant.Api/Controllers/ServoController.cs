@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Plant.Api.Entities.Model;
 using Plant.Api.Entities.Rq.Sensor;
+using Plant.Api.Entities.Rs;
 
 namespace Plant.Api.Controllers {
     [Route ("api/[controller]")]
@@ -76,9 +78,9 @@ namespace Plant.Api.Controllers {
                         while (sqlReader.Read ()) {
                             result.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             result.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
-                            result.DegreesInitial = sqlReader.GetInt32(sqlReader.GetOrdinal("degreesInitial"));
-                            result.DegreesFinal = sqlReader.GetInt32(sqlReader.GetOrdinal("degreesFinal"));
-                            result.OpenedTimeInSeconds = sqlReader.GetInt32(sqlReader.GetOrdinal("openedTimeInSeconds"));
+                            result.DegreesInitial = sqlReader.GetInt32 (sqlReader.GetOrdinal ("degreesInitial"));
+                            result.DegreesFinal = sqlReader.GetInt32 (sqlReader.GetOrdinal ("degreesFinal"));
+                            result.OpenedTimeInSeconds = sqlReader.GetInt32 (sqlReader.GetOrdinal ("openedTimeInSeconds"));
                             result.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
                         }
                     }
@@ -108,9 +110,9 @@ namespace Plant.Api.Controllers {
                     var date = DateTime.Now;
 
                     Console.WriteLine ($"[value] ... {value}");
-                    Console.WriteLine($"[degreesInitial] ... {degreesInitial}");
-                    Console.WriteLine($"[degreesFinal] ... {degreesFinal}");
-                    Console.WriteLine($"[openedTimeInSeconds] ... {openedTimeInSeconds}");
+                    Console.WriteLine ($"[degreesInitial] ... {degreesInitial}");
+                    Console.WriteLine ($"[degreesFinal] ... {degreesFinal}");
+                    Console.WriteLine ($"[openedTimeInSeconds] ... {openedTimeInSeconds}");
                     Console.WriteLine ($"[date] ... {date}");
 
                     connection.Open ();
@@ -122,13 +124,13 @@ namespace Plant.Api.Controllers {
                     command.Parameters.Add ("@value", MySqlDbType.Int32);
                     command.Parameters["@value"].Value = value;
 
-                    command.Parameters.Add("@degreesInitial", MySqlDbType.Int32);
+                    command.Parameters.Add ("@degreesInitial", MySqlDbType.Int32);
                     command.Parameters["@degreesInitial"].Value = degreesInitial;
 
-                    command.Parameters.Add("@degreesFinal", MySqlDbType.Int32);
+                    command.Parameters.Add ("@degreesFinal", MySqlDbType.Int32);
                     command.Parameters["@degreesFinal"].Value = degreesFinal;
 
-                    command.Parameters.Add("@openedTimeInSeconds", MySqlDbType.Int32);
+                    command.Parameters.Add ("@openedTimeInSeconds", MySqlDbType.Int32);
                     command.Parameters["@openedTimeInSeconds"].Value = openedTimeInSeconds;
 
                     command.Parameters.Add ("@date", MySqlDbType.DateTime);
@@ -179,91 +181,150 @@ namespace Plant.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("GetChart")]
-        public ActionResult<IEnumerable<ChartModel>> GetChartServoData(DateTime from, DateTime to)
-        {
+        [Route ("GetChart")]
+        public ActionResult<IEnumerable<ChartModel>> GetChartServoData (DateTime from, DateTime to) {
 
-            List<ChartModel> result = new List<ChartModel>();
-            try
-            {
+            List<ChartModel> result = new List<ChartModel> ();
+            try {
 
-                if (from.Equals(DateTime.MinValue) || from.ToString("u").Equals("0000-00-00 00:00:00Z")
-                    || to.Equals(DateTime.MinValue) || to.ToString("u").Equals("0000-00-00 00:00:00Z")
-                    )
-                {
-                    using (MySqlConnection connection = new MySqlConnection(ConnectionString))
-                    {
+                if (from.Equals (DateTime.MinValue) || from.ToString ("u").Equals ("0000-00-00 00:00:00Z") ||
+                    to.Equals (DateTime.MinValue) || to.ToString ("u").Equals ("0000-00-00 00:00:00Z")
+                ) {
+                    using (MySqlConnection connection = new MySqlConnection (ConnectionString)) {
 
-                        connection.Open();
+                        connection.Open ();
                         var query = $"SELECT * FROM SERVO_LOGS ";
 
-                        var command = new MySqlCommand(query, connection);
+                        var command = new MySqlCommand (query, connection);
 
-                        var sqlReader = command.ExecuteReader();
-                        if (sqlReader.HasRows)
-                        {
-                            while (sqlReader.Read())
-                            {
+                        var sqlReader = command.ExecuteReader ();
+                        if (sqlReader.HasRows) {
+                            while (sqlReader.Read ()) {
 
-                                var item = new ChartModel();
+                                var item = new ChartModel ();
 
-                                var valueInt = sqlReader.GetInt32(sqlReader.GetOrdinal("value"));
+                                var valueInt = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
                                 item.y = $"{valueInt}";
-                                var date = sqlReader.GetDateTime(sqlReader.GetOrdinal("timestamp"));
-                                item.x = date.ToString("HH:mm");
+                                var date = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+                                item.x = date.ToString ("MM/dd/yyyy HH:mm:ss");
                                 // will use this value to know the time opened will call mode
-                                item.mode = sqlReader.GetInt32(sqlReader.GetOrdinal("openedTimeInSeconds"));
+                                item.mode = sqlReader.GetInt32 (sqlReader.GetOrdinal ("openedTimeInSeconds"));
 
-                                result.Add(item);
+                                result.Add (item);
                             }
                         }
                     }
-                }
-                else
-                {
+                } else {
 
-                    using (MySqlConnection connection = new MySqlConnection(ConnectionString))
-                    {
+                    using (MySqlConnection connection = new MySqlConnection (ConnectionString)) {
 
-                        connection.Open();
+                        connection.Open ();
                         var query = $"SELECT * FROM SERVO_LOGS " +
                             $"WHERE timestamp >= @from " +
                             $"AND timestamp <= @to";
 
-                        var command = new MySqlCommand(query, connection);
-                        command.Parameters.Add("@from", MySqlDbType.Datetime);
+                        var command = new MySqlCommand (query, connection);
+                        command.Parameters.Add ("@from", MySqlDbType.Datetime);
                         command.Parameters["@from"].Value = from;
 
-                        command.Parameters.Add("@to", MySqlDbType.Datetime);
+                        command.Parameters.Add ("@to", MySqlDbType.Datetime);
                         command.Parameters["@to"].Value = to;
 
-                        var sqlReader = command.ExecuteReader();
-                        if (sqlReader.HasRows)
-                        {
-                            while (sqlReader.Read())
-                            {
+                        var sqlReader = command.ExecuteReader ();
+                        if (sqlReader.HasRows) {
+                            while (sqlReader.Read ()) {
 
-                                var item = new ChartModel();
+                                var item = new ChartModel ();
 
-                                var valueInt = sqlReader.GetInt32(sqlReader.GetOrdinal("value"));
+                                var valueInt = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
                                 item.y = $"{valueInt}";
-                                var date = sqlReader.GetDateTime(sqlReader.GetOrdinal("timestamp"));
-                                item.x = date.ToString("HH:mm");
+                                var date = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+                                item.x = date.ToString ("MM/dd/yyyy HH:mm:ss");
                                 // will use this value to know the time opened will call mode
-                                item.mode = sqlReader.GetInt32(sqlReader.GetOrdinal("openedTimeInSeconds"));
+                                item.mode = sqlReader.GetInt32 (sqlReader.GetOrdinal ("openedTimeInSeconds"));
 
-                                result.Add(item);
+                                result.Add (item);
                             }
                         }
                     }
 
                 }
 
-
+            } catch (System.Exception ex) {
+                Console.WriteLine ($"ERROR ... {ex.Message}");
+                throw;
             }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine($"ERROR ... {ex.Message}");
+
+            return result;
+        }
+
+        /// <summary>
+        /// Datatable interface
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route ("GetAll")]
+        public ActionResult<DataTableAdapterRs<ServoLogRs>> GetAll (DataTableRq request) {
+
+            var result = new DataTableAdapterRs<ServoLogRs> ();
+            List<ServoLogRs> DataBaseResult = new List<ServoLogRs> ();
+            try {
+                using (MySqlConnection connection = new MySqlConnection (ConnectionString)) {
+
+                    var queryConditions = "";
+
+                    if (request.order != null && request.order.Any ()) {
+                        foreach (var item in request.order) {
+                            foreach (var itemOfDicctionary in item) {
+
+                                if (itemOfDicctionary.Key.Equals ("column")) {
+                                    queryConditions += $" ORDER BY id ";
+                                }
+                                if (itemOfDicctionary.Key.Equals ("dir")) {
+                                    queryConditions += $" {itemOfDicctionary.Value.ToUpper()} ";
+                                }
+                            }
+                        }
+                        queryConditions += $"";
+                    }
+
+                    if (request.length > 0) {
+                        queryConditions += $" LIMIT {request.start},{request.length} ";
+                    }
+
+                    connection.Open ();
+                    var query = $"SELECT * FROM SERVO_LOGS " +
+                        $"WHERE 1=1 " +
+                        $"{queryConditions}" +
+                        $"";
+
+                    var command = new MySqlCommand (query, connection);
+                    var sqlReader = command.ExecuteReader ();
+                    if (sqlReader.HasRows) {
+                        while (sqlReader.Read ()) {
+                            var log = new ServoLogRs ();
+
+                            log.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
+                            log.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
+                            log.DegreesInitial = sqlReader.GetInt32 (sqlReader.GetOrdinal ("degreesInitial"));
+                            log.DegreesFinal = sqlReader.GetInt32 (sqlReader.GetOrdinal ("degreesFinal"));
+                            log.OpenedTimeInSeconds = sqlReader.GetInt32 (sqlReader.GetOrdinal ("openedTimeInSeconds"));
+                            log.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+
+                            DataBaseResult.Add (log);
+                        }
+
+                        // fill other properties
+                        result.Data = DataBaseResult;
+                        result.Draw = request.draw;
+                        if (DataBaseResult != null && DataBaseResult.Any ()) {
+                            result.RecordsTotal = this.Get ().Value.ToList ().Count;
+                            result.RecordsFiltered = this.Get ().Value.ToList ().Count;
+                        }
+                    }
+                }
+            } catch (System.Exception ex) {
+                Console.WriteLine ($"ERROR ... {ex.Message}");
                 throw;
             }
 

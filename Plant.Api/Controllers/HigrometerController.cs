@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Plant.Api.Entities.Model;
 using Plant.Api.Entities.Rq.Sensor;
+using Plant.Api.Entities.Rs;
 using Plant.Api.Entities.Rs.Sensor;
 
 namespace Plant.Api.Controllers {
@@ -128,7 +130,6 @@ namespace Plant.Api.Controllers {
 
         }
 
-        // DELETE api/values/5
         [HttpDelete ("{id}")]
         public void Delete (int id) {
 
@@ -161,81 +162,78 @@ namespace Plant.Api.Controllers {
             }
         }
 
+        /// <summary>
+        /// Chart interface
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route ("GetChart")]
-        public ActionResult<IEnumerable<ChartModel>> GetChartHigrometerData (DateTime from,DateTime to) {
+        public ActionResult<IEnumerable<ChartModel>> GetChartHigrometerData (DateTime from, DateTime to) {
 
             List<ChartModel> result = new List<ChartModel> ();
             try {
 
-                if (from.Equals(DateTime.MinValue) || from.ToString("u").Equals("0000-00-00 00:00:00Z")
-                    || to.Equals(DateTime.MinValue) || to.ToString("u").Equals("0000-00-00 00:00:00Z")
-                    )
-                {
-                    using (MySqlConnection connection = new MySqlConnection(ConnectionString))
-                    {
+                if (from.Equals (DateTime.MinValue) || from.ToString ("u").Equals ("0000-00-00 00:00:00Z") ||
+                    to.Equals (DateTime.MinValue) || to.ToString ("u").Equals ("0000-00-00 00:00:00Z")
+                ) {
+                    using (MySqlConnection connection = new MySqlConnection (ConnectionString)) {
 
-                        connection.Open();
+                        connection.Open ();
                         var query = $"SELECT * FROM HIGROMETER_LOGS ";
 
-                        var command = new MySqlCommand(query, connection);
+                        var command = new MySqlCommand (query, connection);
 
-                        var sqlReader = command.ExecuteReader();
-                        if (sqlReader.HasRows)
-                        {
-                            while (sqlReader.Read())
-                            {
+                        var sqlReader = command.ExecuteReader ();
+                        if (sqlReader.HasRows) {
+                            while (sqlReader.Read ()) {
 
-                                var item = new ChartModel();
+                                var item = new ChartModel ();
 
-                                var valueInt = sqlReader.GetInt32(sqlReader.GetOrdinal("value"));
+                                var valueInt = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
                                 item.y = $"{valueInt}";
-                                var date = sqlReader.GetDateTime(sqlReader.GetOrdinal("timestamp"));
-                                item.x = date.ToString("HH:mm");
+                                var date = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+                                item.x = date.ToString ("MM/dd/yyyy HH:mm:ss");
 
-                                result.Add(item);
+                                result.Add (item);
                             }
                         }
                     }
-                }
-                else {
+                } else {
 
-                    using (MySqlConnection connection = new MySqlConnection(ConnectionString))
-                    {
+                    using (MySqlConnection connection = new MySqlConnection (ConnectionString)) {
 
-                        connection.Open();
+                        connection.Open ();
                         var query = $"SELECT * FROM HIGROMETER_LOGS " +
                             $"WHERE timestamp >= @from " +
                             $"AND timestamp <= @to";
 
-                        var command = new MySqlCommand(query, connection);
-                        command.Parameters.Add("@from", MySqlDbType.Datetime);
+                        var command = new MySqlCommand (query, connection);
+                        command.Parameters.Add ("@from", MySqlDbType.Datetime);
                         command.Parameters["@from"].Value = from;
 
-                        command.Parameters.Add("@to", MySqlDbType.Datetime);
+                        command.Parameters.Add ("@to", MySqlDbType.Datetime);
                         command.Parameters["@to"].Value = to;
 
-                        var sqlReader = command.ExecuteReader();
-                        if (sqlReader.HasRows)
-                        {
-                            while (sqlReader.Read())
-                            {
+                        var sqlReader = command.ExecuteReader ();
+                        if (sqlReader.HasRows) {
+                            while (sqlReader.Read ()) {
 
-                                var item = new ChartModel();
+                                var item = new ChartModel ();
 
-                                var valueInt = sqlReader.GetInt32(sqlReader.GetOrdinal("value"));
+                                var valueInt = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
                                 item.y = $"{valueInt}";
-                                var date = sqlReader.GetDateTime(sqlReader.GetOrdinal("timestamp"));
-                                item.x = date.ToString("HH:mm");
+                                var date = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+                                item.x = date.ToString ("MM/dd/yyyy HH:mm:ss");
 
-                                result.Add(item);
+                                result.Add (item);
                             }
                         }
                     }
 
                 }
 
-                
             } catch (System.Exception ex) {
                 Console.WriteLine ($"ERROR ... {ex.Message}");
                 throw;
@@ -243,5 +241,76 @@ namespace Plant.Api.Controllers {
 
             return result;
         }
+
+        /// <summary>
+        /// Datatable interface
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        [Route ("GetAll")]
+        public ActionResult<DataTableAdapterRs<HigrometerLogRs>> GetAll (DataTableRq request) {
+
+            var result = new DataTableAdapterRs<HigrometerLogRs> ();
+            List<HigrometerLogRs> DataBaseResult = new List<HigrometerLogRs> ();
+            try {
+
+                using (MySqlConnection connection = new MySqlConnection (ConnectionString)) {
+
+                    var queryConditions = "";
+
+                    if (request.order != null && request.order.Any ()) {
+                        foreach (var item in request.order) {
+                            foreach (var itemOfDicctionary in item) {
+
+                                if (itemOfDicctionary.Key.Equals ("column")) {
+                                    queryConditions += $" ORDER BY id ";
+                                }
+                                if (itemOfDicctionary.Key.Equals ("dir")) {
+                                    queryConditions += $" {itemOfDicctionary.Value.ToUpper()} ";
+                                }
+                            }
+                        }
+                        queryConditions += $"";
+                    }
+
+                    if (request.length > 0) {
+                        queryConditions += $" LIMIT {request.start},{request.length} ";
+                    }
+
+                    connection.Open ();
+                    var query = $"SELECT * FROM HIGROMETER_LOGS " +
+                        $"WHERE 1=1 " +
+                        $"{queryConditions}" +
+                        $"";
+
+                    var command = new MySqlCommand (query, connection);
+                    var sqlReader = command.ExecuteReader ();
+                    if (sqlReader.HasRows) {
+                        while (sqlReader.Read ()) {
+                            var log = new HigrometerLogRs ();
+
+                            log.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
+                            log.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
+                            log.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+
+                            DataBaseResult.Add (log);
+                        }
+
+                        result.Data = DataBaseResult;
+                        result.Draw = request.draw;
+                        if (DataBaseResult != null && DataBaseResult.Any ()) {
+                            result.RecordsTotal = this.Get ().Value.ToList ().Count;
+                            result.RecordsFiltered = this.Get ().Value.ToList ().Count;
+                        }
+                    }
+                }
+            } catch (System.Exception ex) {
+                Console.WriteLine ($"ERROR ... {ex.Message}");
+                throw;
+            }
+
+            return result;
+        }
+
     }
 }
