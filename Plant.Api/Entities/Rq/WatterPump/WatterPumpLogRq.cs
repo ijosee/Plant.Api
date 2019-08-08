@@ -6,6 +6,5 @@ namespace Plant.Api.Entities.Rq.WatterPump {
         public int Value { get; set; }
         public int Flow { get; set; }
         public int OpenedTimeInSeconds { get; set; }
-        public DateTime Timestamp { get; set; }
     }
 }
