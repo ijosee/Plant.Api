@@ -41,6 +41,7 @@ namespace Plant.Api.Controllers {
                             result.Add (sqlReader.GetInt32 (sqlReader.GetOrdinal ("id")));
                         }
                     } else {
+                        _logger.LogInformation ($" No results .");
                         return StatusCode (204);
                     }
                 }
@@ -81,6 +82,7 @@ namespace Plant.Api.Controllers {
                             result.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
                         }
                     } else {
+                        _logger.LogInformation ($" No results .");
                         return StatusCode (204);
                     }
                 }
@@ -221,6 +223,7 @@ namespace Plant.Api.Controllers {
                         }
 
                     } else {
+                        _logger.LogInformation ($" No results .");
                         return StatusCode (204);
                     }
                 }
@@ -299,6 +302,7 @@ namespace Plant.Api.Controllers {
                             result.RecordsFiltered = this.Get ().Value.ToList ().Count;
                         }
                     } else {
+                        _logger.LogInformation ($" No results .");
                         return StatusCode (204);
                     }
                 }
