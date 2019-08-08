@@ -8,19 +8,19 @@ using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Plant.Api.Entities.Rq.DataTable;
-using Plant.Api.Entities.Rq.Light;
-using Plant.Api.Entities.Rs.Light;
+using Plant.Api.Entities.Rq.WatterPump;
+using Plant.Api.Entities.Rs.WatterPump;
 
 namespace Plant.Api.Controllers {
     [Route ("api/[controller]")]
     [ApiController]
-    public class LightController : ControllerBase {
+    public class WatterPumpController : ControllerBase {
 
         public ILogger _logger;
         readonly IAppSettings _appSettings;
 
         IConfiguration _configuration;
-        public LightController (ILogger logger, IAppSettings appSettings) {
+        public WatterPumpController (ILogger logger, IAppSettings appSettings) {
             _logger = logger;
             _appSettings = appSettings;
         }
@@ -33,7 +33,7 @@ namespace Plant.Api.Controllers {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
-                    var query = $"SELECT * FROM LIGHT_LOGS ";
+                    var query = $"SELECT * FROM WATTERPUMP_LOGS ";
 
                     var command = new MySqlCommand (query, connection);
 
@@ -56,9 +56,9 @@ namespace Plant.Api.Controllers {
         }
 
         [HttpGet ("{id}")]
-        public ActionResult<LightLogRs> Get (int id) {
+        public ActionResult<WatterPumpLogRs> Get (int id) {
 
-            var result = new LightLogRs ();
+            var result = new WatterPumpLogRs ();
             _logger.LogInformation ($"[*********************** >][Request - id] : {id}");
             try {
 
@@ -67,7 +67,7 @@ namespace Plant.Api.Controllers {
                     var value = id;
 
                     connection.Open ();
-                    var query = $"SELECT * FROM LIGHT_LOGS " +
+                    var query = $"SELECT * FROM WATTERPUMP_LOGS " +
                         $"WHERE id = @id ";
 
                     var command = new MySqlCommand (query, connection);
@@ -76,7 +76,7 @@ namespace Plant.Api.Controllers {
 
                     var sqlReader = command.ExecuteReader ();
                     if (sqlReader.HasRows) {
-                        result = new LightLogRs ();
+                        result = new WatterPumpLogRs ();
                         while (sqlReader.Read ()) {
                             result.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             result.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
@@ -96,7 +96,7 @@ namespace Plant.Api.Controllers {
         }
 
         [HttpPost]
-        public IActionResult Post ([FromBody] LightLogRq request) {
+        public IActionResult Post ([FromBody] WatterPumpLogRq request) {
 
             if (request == null) {
                 return StatusCode (400, "Please fill correctly request.");
@@ -112,7 +112,7 @@ namespace Plant.Api.Controllers {
 
                     connection.Open ();
                     var query = $"INSERT INTO " +
-                        $"LIGHT_LOGS(`value`,`timestamp`) " +
+                        $"WATTERPUMP_LOGS(`value`,`timestamp`) " +
                         $"VALUES (@value,@date)";
 
                     var command = new MySqlCommand (query, connection);
@@ -144,7 +144,7 @@ namespace Plant.Api.Controllers {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
-                    var query = $"DELETE FROM LIGHT_LOGS WHERE id = @id ";
+                    var query = $"DELETE FROM WATTERPUMP_LOGS WHERE id = @id ";
 
                     var command = new MySqlCommand (query, connection);
                     command.Parameters.Add ("@id", MySqlDbType.Int32);
@@ -172,7 +172,7 @@ namespace Plant.Api.Controllers {
         /// <returns>a formated value for draw chart.js bootstrap format</returns>
         [HttpGet]
         [Route ("GetChart")]
-        public ActionResult<IEnumerable<ChartModel>> GetChartLightData (DateTime from, DateTime to) {
+        public ActionResult<IEnumerable<ChartModel>> GetChartWatterPumpData (DateTime from, DateTime to) {
 
             var addDateFilter = false;
             if (!from.Equals (DateTime.MinValue) && !from.ToString ("u").Equals ("0000-00-00 00:00:00Z") ||
@@ -188,7 +188,7 @@ namespace Plant.Api.Controllers {
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
-                    var query = $"SELECT * FROM LIGHT_LOGS WHERE 1=1 ";
+                    var query = $"SELECT * FROM WATTERPUMP_LOGS WHERE 1=1 ";
                     var command = new MySqlCommand ();
 
                     if (addDateFilter) {
@@ -241,15 +241,15 @@ namespace Plant.Api.Controllers {
         /// <returns>a formated value for draw dataTable.js bootstrap format</returns>
         [HttpPost]
         [Route ("GetDataTable")]
-        public ActionResult<LightDataTableRs> GetDataTable (LightDataTableRq request) {
+        public ActionResult<WatterPumpDataTableRs> GetDataTable (WatterPumpDataTableRq request) {
 
             if (request == null) {
                 return StatusCode (400);
             } else {
                 _logger.LogInformation ($"[*********************** >][Request] : {JsonConvert.SerializeObject(request)}");
             }
-            var result = new LightDataTableRs ();
-            List<LightLogRs> DataBaseResult = new List<LightLogRs> ();
+            var result = new WatterPumpDataTableRs ();
+            List<WatterPumpLogRs> DataBaseResult = new List<WatterPumpLogRs> ();
             try {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
@@ -275,7 +275,7 @@ namespace Plant.Api.Controllers {
                     }
 
                     connection.Open ();
-                    var query = $"SELECT * FROM LIGHT_LOGS " +
+                    var query = $"SELECT * FROM WATTERPUMP_LOGS " +
                         $"WHERE 1=1 " +
                         $"{queryConditions}" +
                         $"";
@@ -284,7 +284,7 @@ namespace Plant.Api.Controllers {
                     var sqlReader = command.ExecuteReader ();
                     if (sqlReader.HasRows) {
                         while (sqlReader.Read ()) {
-                            var log = new LightLogRs ();
+                            var log = new WatterPumpLogRs ();
 
                             log.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             log.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));

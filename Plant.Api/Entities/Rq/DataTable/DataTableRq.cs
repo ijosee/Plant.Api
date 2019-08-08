@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 
-namespace Plant.Api.Entities.Model {
+// namespace Plant.Api.Entities.Rq.DataTable {
+namespace Plant.Api.Entities.Rq.DataTable {
     public class DataTableRq {
 
         /// <summary>

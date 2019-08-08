@@ -2,37 +2,47 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Interaces.Services.AppSettings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using Plant.Api.Services;
 
 namespace Plant.Api {
     public class Startup {
-        public Startup (IConfiguration configuration) {
-            Configuration = configuration;
-        }
 
         public IConfiguration Configuration { get; }
+        public ILogger Logger { get; }
+
         readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+        public Startup (IConfiguration configuration, ILogger<Startup> logger) {
+            Configuration = configuration;
+            Logger = logger;
+        }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices (IServiceCollection services) {
+
             services.AddCors (options => {
                 options.AddPolicy (MyAllowSpecificOrigins,
                     builder => {
                         builder.WithOrigins ().AllowAnyOrigin ();
                     });
             });
+
             services.AddSwaggerGen (c => {
                 c.SwaggerDoc ("v1", new OpenApiInfo { Title = "Plant api", Version = "v1" });
             });
 
             services.AddSingleton<IConfiguration> (Configuration);
+            services.AddSingleton<ILogger> (Logger);
+
+            services.AddTransient<IAppSettings, AppSettings> ();
 
             services.AddMvc ().SetCompatibilityVersion (CompatibilityVersion.Version_2_2);
         }

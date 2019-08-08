@@ -3,24 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using Interaces.Services.AppSettings;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
+using Plant.Api.Entities.Rq.Calendar;
 using Plant.Api.Entities.Rq.DataTable;
-using Plant.Api.Entities.Rq.Light;
-using Plant.Api.Entities.Rs.Light;
+using Plant.Api.Entities.Rs.Calendar;
 
 namespace Plant.Api.Controllers {
+
     [Route ("api/[controller]")]
     [ApiController]
-    public class LightController : ControllerBase {
+    public class CalendarController : ControllerBase {
 
         public ILogger _logger;
         readonly IAppSettings _appSettings;
 
-        IConfiguration _configuration;
-        public LightController (ILogger logger, IAppSettings appSettings) {
+        public CalendarController (ILogger logger, IAppSettings appSettings) {
             _logger = logger;
             _appSettings = appSettings;
         }
@@ -33,7 +32,7 @@ namespace Plant.Api.Controllers {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
-                    var query = $"SELECT * FROM LIGHT_LOGS ";
+                    var query = $"SELECT * FROM CALENDAR_EVENT ";
 
                     var command = new MySqlCommand (query, connection);
 
@@ -48,7 +47,7 @@ namespace Plant.Api.Controllers {
                 }
             } catch (System.Exception ex) {
                 _logger.LogError ($"{ex.Message}");
-                throw;
+                return StatusCode (500);
             }
 
             _logger.LogInformation ($"Total results : {result.Count()}");
@@ -56,9 +55,9 @@ namespace Plant.Api.Controllers {
         }
 
         [HttpGet ("{id}")]
-        public ActionResult<LightLogRs> Get (int id) {
+        public ActionResult<CalendarLogRs> Get (int id) {
 
-            var result = new LightLogRs ();
+            var result = new CalendarLogRs ();
             _logger.LogInformation ($"[*********************** >][Request - id] : {id}");
             try {
 
@@ -67,7 +66,7 @@ namespace Plant.Api.Controllers {
                     var value = id;
 
                     connection.Open ();
-                    var query = $"SELECT * FROM LIGHT_LOGS " +
+                    var query = $"SELECT * FROM CALENDAR_EVENT " +
                         $"WHERE id = @id ";
 
                     var command = new MySqlCommand (query, connection);
@@ -76,11 +75,13 @@ namespace Plant.Api.Controllers {
 
                     var sqlReader = command.ExecuteReader ();
                     if (sqlReader.HasRows) {
-                        result = new LightLogRs ();
+                        result = new CalendarLogRs ();
                         while (sqlReader.Read ()) {
                             result.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
-                            result.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
-                            result.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
+                            result.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
+                            result.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
+                            result.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start"));
+                            result.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end"));
                         }
                     } else {
                         return StatusCode (204);
@@ -96,9 +97,9 @@ namespace Plant.Api.Controllers {
         }
 
         [HttpPost]
-        public IActionResult Post ([FromBody] LightLogRq request) {
+        public IActionResult Post ([FromBody] CalendarLogRs request) {
 
-            if (request == null) {
+            if (request == null || string.IsNullOrEmpty (request.Title) || string.IsNullOrEmpty (request.Description)) {
                 return StatusCode (400, "Please fill correctly request.");
             } else {
                 _logger.LogInformation ($"[Request] ... {JsonConvert.SerializeObject(request)}");
@@ -106,21 +107,28 @@ namespace Plant.Api.Controllers {
 
             try {
 
-                Console.WriteLine ($"[Request] ... {JsonConvert.SerializeObject(request)}");
-
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
                     var query = $"INSERT INTO " +
-                        $"LIGHT_LOGS(`value`,`timestamp`) " +
-                        $"VALUES (@value,@date)";
+                        $"CALENDAR_EVENT(`title`,`description`,`start`,`end`,`timestamp`) " +
+                        $"VALUES (@title,@description,@start,@end,@timestamp)";
 
                     var command = new MySqlCommand (query, connection);
-                    command.Parameters.Add ("@value", MySqlDbType.Int32);
-                    command.Parameters["@value"].Value = request.Value;
+                    command.Parameters.Add ("@title", MySqlDbType.String);
+                    command.Parameters["@title"].Value = request.Title;
 
-                    command.Parameters.Add ("@date", MySqlDbType.DateTime);
-                    command.Parameters["@date"].Value = DateTime.Now;
+                    command.Parameters.Add ("@description", MySqlDbType.String);
+                    command.Parameters["@description"].Value = request.Description;
+
+                    command.Parameters.Add ("@start", MySqlDbType.DateTime);
+                    command.Parameters["@start"].Value = request.Start;
+
+                    command.Parameters.Add ("@end", MySqlDbType.DateTime);
+                    command.Parameters["@end"].Value = request.End;
+
+                    command.Parameters.Add ("@timestamp", MySqlDbType.DateTime);
+                    command.Parameters["@timestamp"].Value = DateTime.Now;
 
                     Int32 rowsAffected = command.ExecuteNonQuery ();
                     _logger.LogInformation ($"[RowsAffected] ... {rowsAffected}");
@@ -144,7 +152,7 @@ namespace Plant.Api.Controllers {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
-                    var query = $"DELETE FROM LIGHT_LOGS WHERE id = @id ";
+                    var query = $"DELETE FROM CALENDAR_EVENT WHERE id = @id ";
 
                     var command = new MySqlCommand (query, connection);
                     command.Parameters.Add ("@id", MySqlDbType.Int32);
@@ -165,14 +173,14 @@ namespace Plant.Api.Controllers {
         }
 
         /// <summary>
-        /// Adapter from chart.js
+        /// Adapter for fullcalendar
         /// </summary>
         /// <param name="from"></param>
         /// <param name="to"></param>
-        /// <returns>a formated value for draw chart.js bootstrap format</returns>
+        /// <returns>a formated value for draw fullcalendar.js  format</returns>
         [HttpGet]
-        [Route ("GetChart")]
-        public ActionResult<IEnumerable<ChartModel>> GetChartLightData (DateTime from, DateTime to) {
+        [Route ("GetFullCalendar")]
+        public ActionResult<List<FullCalendarModel>> GetFullCalendar (DateTime from, DateTime to) {
 
             var addDateFilter = false;
             if (!from.Equals (DateTime.MinValue) && !from.ToString ("u").Equals ("0000-00-00 00:00:00Z") ||
@@ -183,24 +191,22 @@ namespace Plant.Api.Controllers {
             _logger.LogInformation ($"[*********************** >][Request - from] : {from.ToString ("u")}");
             _logger.LogInformation ($"[*********************** >][Request - to] : {to.ToString ("u")}");
 
-            var result = new List<ChartModel> ();
+            var result = new List<FullCalendarModel> ();
             try {
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
-                    var query = $"SELECT * FROM LIGHT_LOGS WHERE 1=1 ";
+                    var query = $"SELECT * FROM CALENDAR_EVENT WHERE 1=1 ";
                     var command = new MySqlCommand ();
 
                     if (addDateFilter) {
-                        query += $"AND timestamp BETWEEN " +
-                            $"CONVERT('{from.ToString ("u")}',datetime) " +
-                            $"AND CONVERT('{to.ToString ("u")}',datetime) ";
+                        query += $"AND start BETWEEN @to AND @from ";
 
-                        // command.Parameters.Add ("@from", MySqlDbType.DateTime);
-                        // command.Parameters["@from"].Value = from;
+                        command.Parameters.Add ("@from", MySqlDbType.DateTime);
+                        command.Parameters["@from"].Value = from;
 
-                        // command.Parameters.Add ("@to", MySqlDbType.DateTime);
-                        // command.Parameters["@to"].Value = to;
+                        command.Parameters.Add ("@to", MySqlDbType.DateTime);
+                        command.Parameters["@to"].Value = to;
                     }
 
                     command.CommandText = query;
@@ -212,12 +218,13 @@ namespace Plant.Api.Controllers {
                     if (sqlReader.HasRows) {
                         while (sqlReader.Read ()) {
 
-                            var item = new ChartModel ();
+                            var item = new FullCalendarModel ();
 
-                            var valueInt = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
-                            item.y = $"{valueInt}";
-                            var date = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
-                            item.x = date.ToString ("dd/MM/yyyy HH:mm:ss");
+                            item.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
+                            item.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
+                            item.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
+                            item.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start"));
+                            item.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end"));
 
                             result.Add (item);
                         }
@@ -241,15 +248,15 @@ namespace Plant.Api.Controllers {
         /// <returns>a formated value for draw dataTable.js bootstrap format</returns>
         [HttpPost]
         [Route ("GetDataTable")]
-        public ActionResult<LightDataTableRs> GetDataTable (LightDataTableRq request) {
+        public ActionResult<CalendarDataTableRs> GetDataTable (CalendarDataTableRq request) {
 
             if (request == null) {
                 return StatusCode (400);
             } else {
                 _logger.LogInformation ($"[*********************** >][Request] : {JsonConvert.SerializeObject(request)}");
             }
-            var result = new LightDataTableRs ();
-            List<LightLogRs> DataBaseResult = new List<LightLogRs> ();
+            var result = new CalendarDataTableRs ();
+            List<CalendarLogRs> DataBaseResult = new List<CalendarLogRs> ();
             try {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
@@ -275,7 +282,7 @@ namespace Plant.Api.Controllers {
                     }
 
                     connection.Open ();
-                    var query = $"SELECT * FROM LIGHT_LOGS " +
+                    var query = $"SELECT * FROM CALENDAR_EVENT " +
                         $"WHERE 1=1 " +
                         $"{queryConditions}" +
                         $"";
@@ -284,10 +291,13 @@ namespace Plant.Api.Controllers {
                     var sqlReader = command.ExecuteReader ();
                     if (sqlReader.HasRows) {
                         while (sqlReader.Read ()) {
-                            var log = new LightLogRs ();
+                            var log = new CalendarLogRs ();
 
                             log.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
-                            log.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
+                            log.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
+                            log.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
+                            log.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start"));
+                            log.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end"));
                             log.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
 
                             DataBaseResult.Add (log);
@@ -312,6 +322,5 @@ namespace Plant.Api.Controllers {
             _logger.LogInformation ($"[*********************** >][Result - count] : {result.RecordsTotal}");
             return result;
         }
-
     }
 }

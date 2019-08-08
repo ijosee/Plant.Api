@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Plant.Api.Entities.Rs {
-    public class DataTableAdapterRs<T> {
+namespace Plant.Api.Entities.Rs.DataTable {
+    public class DataTableRs<T> {
         /// <summary>
         /// Representa el número de veces que se ha realizado una petición.
         /// </summary>
