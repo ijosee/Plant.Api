@@ -15,12 +15,10 @@ namespace Plant.Api.Controllers {
     [Route ("api/[controller]")]
     [ApiController]
     public class LightController : ControllerBase {
-
         public ILogger _logger;
         readonly IAppSettings _appSettings;
 
-        IConfiguration _configuration;
-        public LightController (ILogger logger, IAppSettings appSettings) {
+        public LightController (ILogger<LightController> logger, IAppSettings appSettings) {
             _logger = logger;
             _appSettings = appSettings;
         }
@@ -51,7 +49,7 @@ namespace Plant.Api.Controllers {
                 throw;
             }
 
-            _logger.LogInformation ($"Total results : {result.Count()}");
+            _logger.LogInformation ($" Total results : {result.Count()}");
             return result;
         }
 
@@ -59,7 +57,7 @@ namespace Plant.Api.Controllers {
         public ActionResult<LightLogRs> Get (int id) {
 
             var result = new LightLogRs ();
-            _logger.LogInformation ($"[*********************** >][Request - id] : {id}");
+            _logger.LogInformation ($" [*********************** >][Request - id] : {id}");
             try {
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
@@ -91,7 +89,7 @@ namespace Plant.Api.Controllers {
                 _logger.LogError ($"{ex.Message}");
                 return StatusCode (500);
             }
-            _logger.LogInformation ($"[*********************** >][Result - id] : {JsonConvert.SerializeObject(result)}");
+            _logger.LogInformation ($" [*********************** >][Result - id] : {JsonConvert.SerializeObject(result)}");
             return result;
         }
 
@@ -101,12 +99,12 @@ namespace Plant.Api.Controllers {
             if (request == null) {
                 return StatusCode (400, "Please fill correctly request.");
             } else {
-                _logger.LogInformation ($"[Request] ... {JsonConvert.SerializeObject(request)}");
+                _logger.LogInformation ($" [Request] ... {JsonConvert.SerializeObject(request)}");
             }
 
             try {
 
-                Console.WriteLine ($"[Request] ... {JsonConvert.SerializeObject(request)}");
+                _logger.LogInformation ($" [Request] ... {JsonConvert.SerializeObject(request)}");
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
@@ -123,7 +121,7 @@ namespace Plant.Api.Controllers {
                     command.Parameters["@date"].Value = DateTime.Now;
 
                     Int32 rowsAffected = command.ExecuteNonQuery ();
-                    _logger.LogInformation ($"[RowsAffected] ... {rowsAffected}");
+                    _logger.LogInformation ($" [RowsAffected] ... {rowsAffected}");
                 }
 
             } catch (System.Exception ex) {
@@ -139,7 +137,7 @@ namespace Plant.Api.Controllers {
 
             try {
 
-                _logger.LogInformation ($"[Request] ... {id}");
+                _logger.LogInformation ($" [Request] ... {id}");
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
@@ -152,7 +150,7 @@ namespace Plant.Api.Controllers {
 
                     var sqlResult = command.ExecuteNonQuery ();
                     if (sqlResult != 1) {
-                        _logger.LogInformation ($"[Deleted] ... {id}");
+                        _logger.LogInformation ($" [Deleted] ... {id}");
                     }
                 }
 
@@ -180,8 +178,8 @@ namespace Plant.Api.Controllers {
             ) {
                 addDateFilter = true;
             }
-            _logger.LogInformation ($"[*********************** >][Request - from] : {from.ToString ("u")}");
-            _logger.LogInformation ($"[*********************** >][Request - to] : {to.ToString ("u")}");
+            _logger.LogInformation ($" [*********************** >][Request - from] : {from.ToString ("u")}");
+            _logger.LogInformation ($" [*********************** >][Request - to] : {to.ToString ("u")}");
 
             var result = new List<ChartModel> ();
             try {
@@ -204,7 +202,7 @@ namespace Plant.Api.Controllers {
                     }
 
                     command.CommandText = query;
-                    _logger.LogInformation ($"Query : {query}");
+                    _logger.LogInformation ($" Query : {query}");
                     command.Connection = connection;
 
                     connection.Open ();
@@ -231,7 +229,7 @@ namespace Plant.Api.Controllers {
                 return StatusCode (500);
             }
 
-            _logger.LogInformation ($"[*********************** >][Result - count] : {result.Count}");
+            _logger.LogInformation ($" [*********************** >][Result - count] : {result.Count}");
             return result;
         }
 
@@ -246,7 +244,7 @@ namespace Plant.Api.Controllers {
             if (request == null) {
                 return StatusCode (400);
             } else {
-                _logger.LogInformation ($"[*********************** >][Request] : {JsonConvert.SerializeObject(request)}");
+                _logger.LogInformation ($" [*********************** >][Request] : {JsonConvert.SerializeObject(request)}");
             }
             var result = new LightDataTableRs ();
             List<LightLogRs> DataBaseResult = new List<LightLogRs> ();
@@ -309,7 +307,7 @@ namespace Plant.Api.Controllers {
                 return StatusCode (500);
             }
 
-            _logger.LogInformation ($"[*********************** >][Result - count] : {result.RecordsTotal}");
+            _logger.LogInformation ($" [*********************** >][Result - count] : {result.RecordsTotal}");
             return result;
         }
 

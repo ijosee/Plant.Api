@@ -15,12 +15,10 @@ namespace Plant.Api.Controllers {
     [Route ("api/[controller]")]
     [ApiController]
     public class WatterPumpController : ControllerBase {
-
         public ILogger _logger;
         readonly IAppSettings _appSettings;
 
-        IConfiguration _configuration;
-        public WatterPumpController (ILogger logger, IAppSettings appSettings) {
+        public WatterPumpController (ILogger<WatterPumpController> logger, IAppSettings appSettings) {
             _logger = logger;
             _appSettings = appSettings;
         }
@@ -51,7 +49,7 @@ namespace Plant.Api.Controllers {
                 throw;
             }
 
-            _logger.LogInformation ($"Total results : {result.Count()}");
+            _logger.LogInformation ($" Total results : {result.Count()}");
             return result;
         }
 
@@ -59,7 +57,7 @@ namespace Plant.Api.Controllers {
         public ActionResult<WatterPumpLogRs> Get (int id) {
 
             var result = new WatterPumpLogRs ();
-            _logger.LogInformation ($"[*********************** >][Request - id] : {id}");
+            _logger.LogInformation ($" [*********************** >][Request - id] : {id}");
             try {
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
@@ -79,7 +77,8 @@ namespace Plant.Api.Controllers {
                         result = new WatterPumpLogRs ();
                         while (sqlReader.Read ()) {
                             result.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
-                            result.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
+                            result.Flow = sqlReader.GetInt32 (sqlReader.GetOrdinal ("flow"));
+                            result.Flow = sqlReader.GetInt32 (sqlReader.GetOrdinal ("flow"));
                             result.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
                         }
                     } else {
@@ -91,7 +90,7 @@ namespace Plant.Api.Controllers {
                 _logger.LogError ($"{ex.Message}");
                 return StatusCode (500);
             }
-            _logger.LogInformation ($"[*********************** >][Result - id] : {JsonConvert.SerializeObject(result)}");
+            _logger.LogInformation ($" [*********************** >][Result - id] : {JsonConvert.SerializeObject(result)}");
             return result;
         }
 
@@ -101,12 +100,12 @@ namespace Plant.Api.Controllers {
             if (request == null) {
                 return StatusCode (400, "Please fill correctly request.");
             } else {
-                _logger.LogInformation ($"[Request] ... {JsonConvert.SerializeObject(request)}");
+                _logger.LogInformation ($" [Request] ... {JsonConvert.SerializeObject(request)}");
             }
 
             try {
 
-                Console.WriteLine ($"[Request] ... {JsonConvert.SerializeObject(request)}");
+                _logger.LogInformation ($" [Request] ... {JsonConvert.SerializeObject(request)}");
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
@@ -123,7 +122,7 @@ namespace Plant.Api.Controllers {
                     command.Parameters["@date"].Value = DateTime.Now;
 
                     Int32 rowsAffected = command.ExecuteNonQuery ();
-                    _logger.LogInformation ($"[RowsAffected] ... {rowsAffected}");
+                    _logger.LogInformation ($" [RowsAffected] ... {rowsAffected}");
                 }
 
             } catch (System.Exception ex) {
@@ -139,7 +138,7 @@ namespace Plant.Api.Controllers {
 
             try {
 
-                _logger.LogInformation ($"[Request] ... {id}");
+                _logger.LogInformation ($" [Request] ... {id}");
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
@@ -152,7 +151,7 @@ namespace Plant.Api.Controllers {
 
                     var sqlResult = command.ExecuteNonQuery ();
                     if (sqlResult != 1) {
-                        _logger.LogInformation ($"[Deleted] ... {id}");
+                        _logger.LogInformation ($" [Deleted] ... {id}");
                     }
                 }
 
@@ -180,8 +179,8 @@ namespace Plant.Api.Controllers {
             ) {
                 addDateFilter = true;
             }
-            _logger.LogInformation ($"[*********************** >][Request - from] : {from.ToString ("u")}");
-            _logger.LogInformation ($"[*********************** >][Request - to] : {to.ToString ("u")}");
+            _logger.LogInformation ($" [*********************** >][Request - from] : {from.ToString ("u")}");
+            _logger.LogInformation ($" [*********************** >][Request - to] : {to.ToString ("u")}");
 
             var result = new List<ChartModel> ();
             try {
@@ -204,7 +203,7 @@ namespace Plant.Api.Controllers {
                     }
 
                     command.CommandText = query;
-                    _logger.LogInformation ($"Query : {query}");
+                    _logger.LogInformation ($" Query : {query}");
                     command.Connection = connection;
 
                     connection.Open ();
@@ -231,7 +230,7 @@ namespace Plant.Api.Controllers {
                 return StatusCode (500);
             }
 
-            _logger.LogInformation ($"[*********************** >][Result - count] : {result.Count}");
+            _logger.LogInformation ($" [*********************** >][Result - count] : {result.Count}");
             return result;
         }
 
@@ -246,7 +245,7 @@ namespace Plant.Api.Controllers {
             if (request == null) {
                 return StatusCode (400);
             } else {
-                _logger.LogInformation ($"[*********************** >][Request] : {JsonConvert.SerializeObject(request)}");
+                _logger.LogInformation ($" [*********************** >][Request] : {JsonConvert.SerializeObject(request)}");
             }
             var result = new WatterPumpDataTableRs ();
             List<WatterPumpLogRs> DataBaseResult = new List<WatterPumpLogRs> ();
@@ -288,6 +287,8 @@ namespace Plant.Api.Controllers {
 
                             log.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             log.Value = sqlReader.GetInt32 (sqlReader.GetOrdinal ("value"));
+                            log.Flow = sqlReader.GetInt32 (sqlReader.GetOrdinal ("flow"));
+                            log.OpenedTimeInSeconds = sqlReader.GetInt32 (sqlReader.GetOrdinal ("openedTimeInSeconds"));
                             log.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
 
                             DataBaseResult.Add (log);
@@ -309,7 +310,7 @@ namespace Plant.Api.Controllers {
                 return StatusCode (500);
             }
 
-            _logger.LogInformation ($"[*********************** >][Result - count] : {result.RecordsTotal}");
+            _logger.LogInformation ($" [*********************** >][Result - count] : {result.RecordsTotal}");
             return result;
         }
 
