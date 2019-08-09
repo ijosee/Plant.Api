@@ -32,7 +32,7 @@ namespace Plant.Api.Controllers {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
-                    var query = $"SELECT * FROM HIGROMETER_LOGS ";
+                    var query = $"SELECT * FROM HUMIDITY_LOGS ";
 
                     var command = new MySqlCommand (query, connection);
 
@@ -67,7 +67,7 @@ namespace Plant.Api.Controllers {
                     var value = id;
 
                     connection.Open ();
-                    var query = $"SELECT * FROM HIGROMETER_LOGS " +
+                    var query = $"SELECT * FROM HUMIDITY_LOGS " +
                         $"WHERE id = @id ";
 
                     var command = new MySqlCommand (query, connection);
@@ -113,7 +113,7 @@ namespace Plant.Api.Controllers {
 
                     connection.Open ();
                     var query = $"INSERT INTO " +
-                        $"HIGROMETER_LOGS(`value`,`timestamp`) " +
+                        $"HUMIDITY_LOGS(`value`,`timestamp`) " +
                         $"VALUES (@value,@date)";
 
                     var command = new MySqlCommand (query, connection);
@@ -145,7 +145,7 @@ namespace Plant.Api.Controllers {
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
                     connection.Open ();
-                    var query = $"DELETE FROM HIGROMETER_LOGS WHERE id = @id ";
+                    var query = $"DELETE FROM HUMIDITY_LOGS WHERE id = @id ";
 
                     var command = new MySqlCommand (query, connection);
                     command.Parameters.Add ("@id", MySqlDbType.Int32);
@@ -189,7 +189,7 @@ namespace Plant.Api.Controllers {
 
                 using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
 
-                    var query = $"SELECT * FROM HIGROMETER_LOGS WHERE 1=1 ";
+                    var query = $"SELECT * FROM HUMIDITY_LOGS WHERE 1=1 ";
                     var command = new MySqlCommand ();
 
                     if (addDateFilter) {
@@ -277,7 +277,7 @@ namespace Plant.Api.Controllers {
                     }
 
                     connection.Open ();
-                    var query = $"SELECT * FROM HIGROMETER_LOGS " +
+                    var query = $"SELECT * FROM HUMIDITY_LOGS " +
                         $"WHERE 1=1 " +
                         $"{queryConditions}" +
                         $"";
