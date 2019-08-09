@@ -224,9 +224,10 @@ namespace Plant.Api.Controllers {
 
                             item.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             item.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
-                            item.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
-                            item.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start"));
-                            item.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end"));
+                            //item.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
+                            item.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start")).ToString ("u");
+                            item.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end")).ToString ("u");
+                            item.AllDay = false;
 
                             result.Add (item);
                         }
