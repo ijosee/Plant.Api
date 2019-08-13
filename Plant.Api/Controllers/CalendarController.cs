@@ -80,7 +80,6 @@ namespace Plant.Api.Controllers {
                         while (sqlReader.Read ()) {
                             result.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             result.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
-                            result.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
                             result.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start"));
                             result.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end"));
                         }
@@ -99,9 +98,11 @@ namespace Plant.Api.Controllers {
         }
 
         [HttpPost]
-        public IActionResult Post ([FromBody] CalendarLogRs request) {
+        public IActionResult Post ([FromBody] SetCalendarLogRq request) {
 
-            if (request == null || string.IsNullOrEmpty (request.Title) || string.IsNullOrEmpty (request.Description)) {
+            var result = new CalendarLogRs ();
+
+            if (request == null || string.IsNullOrEmpty (request.Title)) {
                 return StatusCode (400, "Please fill correctly request.");
             } else {
                 _logger.LogInformation ($" [Request] ... {JsonConvert.SerializeObject(request)}");
@@ -113,15 +114,12 @@ namespace Plant.Api.Controllers {
 
                     connection.Open ();
                     var query = $"INSERT INTO " +
-                        $"CALENDAR_EVENT(`title`,`description`,`start`,`end`,`timestamp`) " +
-                        $"VALUES (@title,@description,@start,@end,@timestamp)";
+                        $"CALENDAR_EVENT(`title`,`start`,`end`,`timestamp`) " +
+                        $"VALUES (@title,@start,@end,@timestamp)";
 
                     var command = new MySqlCommand (query, connection);
                     command.Parameters.Add ("@title", MySqlDbType.String);
                     command.Parameters["@title"].Value = request.Title;
-
-                    command.Parameters.Add ("@description", MySqlDbType.String);
-                    command.Parameters["@description"].Value = request.Description;
 
                     command.Parameters.Add ("@start", MySqlDbType.DateTime);
                     command.Parameters["@start"].Value = request.Start;
@@ -132,8 +130,60 @@ namespace Plant.Api.Controllers {
                     command.Parameters.Add ("@timestamp", MySqlDbType.DateTime);
                     command.Parameters["@timestamp"].Value = DateTime.Now;
 
-                    Int32 rowsAffected = command.ExecuteNonQuery ();
-                    _logger.LogInformation ($" [RowsAffected] ... {rowsAffected}");
+                    Int32 id = (int) command.ExecuteScalar ();
+                    result.Id = id;
+                    _logger.LogInformation ($" [Insered id] ... {id}");
+                }
+
+            } catch (System.Exception ex) {
+                _logger.LogError ($"{ex.Message}");
+                return StatusCode (500);
+            }
+
+            return StatusCode (200, result);
+        }
+
+        [HttpPut]
+        public IActionResult Update ([FromBody] UpdateCalendarLogRq request) {
+
+            var result = new UpdateCalendarLogRs ();
+
+            if (request == null || string.IsNullOrEmpty (request.Title)) {
+                return StatusCode (400, "Please fill correctly request.");
+            } else {
+                _logger.LogInformation ($" [Request] ... {JsonConvert.SerializeObject(request)}");
+            }
+            try {
+
+                using (MySqlConnection connection = new MySqlConnection (_appSettings.GetDataBaseConnectionString ())) {
+
+                    connection.Open ();
+                    var query = $"UPDATE CALENDAR_EVENT " +
+                        $"SET title = @title " +
+                        $", start = @start " +
+                        $", end = @end " +
+                        $", timestamp = @timestamp " +
+                        $"WHERE id = @id";
+
+                    var command = new MySqlCommand (query, connection);
+
+                    command.Parameters.Add ("@id", MySqlDbType.Int32);
+                    command.Parameters["@id"].Value = request.Id;
+
+                    command.Parameters.Add ("@title", MySqlDbType.String);
+                    command.Parameters["@title"].Value = request.Title;
+
+                    command.Parameters.Add ("@start", MySqlDbType.DateTime);
+                    command.Parameters["@start"].Value = request.Start;
+
+                    command.Parameters.Add ("@end", MySqlDbType.DateTime);
+                    command.Parameters["@end"].Value = request.End;
+
+                    command.Parameters.Add ("@timestamp", MySqlDbType.DateTime);
+                    command.Parameters["@timestamp"].Value = DateTime.Now;
+
+                    Int32 id = (int) command.ExecuteNonQuery ();
+                    _logger.LogInformation ($" [Updated] ... {id}");
                 }
 
             } catch (System.Exception ex) {
@@ -224,7 +274,6 @@ namespace Plant.Api.Controllers {
 
                             item.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             item.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
-                            //item.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
                             item.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start")).ToString ("u");
                             item.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end")).ToString ("u");
                             item.AllDay = false;
@@ -299,7 +348,6 @@ namespace Plant.Api.Controllers {
 
                             log.Id = sqlReader.GetInt32 (sqlReader.GetOrdinal ("id"));
                             log.Title = sqlReader.GetString (sqlReader.GetOrdinal ("title"));
-                            log.Description = sqlReader.GetString (sqlReader.GetOrdinal ("description"));
                             log.Start = sqlReader.GetDateTime (sqlReader.GetOrdinal ("start"));
                             log.End = sqlReader.GetDateTime (sqlReader.GetOrdinal ("end"));
                             log.Timestamp = sqlReader.GetDateTime (sqlReader.GetOrdinal ("timestamp"));
